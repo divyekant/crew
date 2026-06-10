@@ -73,6 +73,15 @@ citations: `docs/research/findings.md`.
 
 ## Files
 
-- `SKILL.md` — the skill (portable core, both hosts)
+- `skills/crew/SKILL.md` — the skill (portable core, both hosts)
+- `skills/crew/workers/` — per-worker definitions (brief additions, review focus, failure modes)
 - `skill-conductor/pipelines.yaml` — additive build-phase wiring
 - `docs/research/` — research findings and sources
+
+## Update 2026-06-10 (later same day): mainstreamed as OSS
+
+Restructured to the house public-skill layout (`skills/crew/` like
+hermes/delphi), added Apollo OSS scaffolding (`extends: oss`), plugin
+manifest (`.claude-plugin/plugin.json`), Codex install guide, and
+dk-marketplace listing. Repo made public at github.com/divyekant/crew,
+tagged v0.1.0. Both host symlinks re-pointed to `skills/crew/`.

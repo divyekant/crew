@@ -33,11 +33,15 @@ implementation.
 
 ## The roster
 
-| Worker | Spawn as | Owns |
-|---|---|---|
-| **Opus** | Agent tool, `model: "opus"` | Frontend: components, styling, layout, UX states, accessibility, visual polish |
-| **GPT‑5.5** | Agent tool, `subagent_type: "codex:codex-rescue"` | Backend: APIs, services, DB/schema, auth, queues, integrations, business logic |
-| **Sonnet** | Agent tool, `model: "sonnet"` | Mechanical: tests, fixtures, renames, codemods, boilerplate, doc updates, lint sweeps |
+| Worker | Spawn as | Owns | Definition |
+|---|---|---|---|
+| **Opus** | Agent tool, `model: "opus"` | Frontend: components, styling, layout, UX states, accessibility, visual polish | `workers/opus-frontend.md` |
+| **GPT‑5.5** | Agent tool, `subagent_type: "codex:codex-rescue"` | Backend: APIs, services, DB/schema, auth, queues, integrations, business logic | `workers/gpt-backend.md` |
+| **Sonnet** | Agent tool, `model: "sonnet"` | Mechanical: tests, fixtures, renames, codemods, boilerplate, doc updates, lint sweeps | `workers/sonnet-mechanical.md` |
+
+Before composing a brief, read the worker's definition file (paths relative
+to this skill directory) — it carries that worker's brief additions, review
+focus, and known failure modes.
 
 ## Routing rules
 
@@ -76,8 +80,8 @@ GOAL: <one sentence>
 FILES YOU OWN: <paths — you are the only writer of these>
 OUT OF SCOPE: <explicit exclusions — do not touch these even if tempting>
 CONTEXT: <everything needed to work standalone — contracts, types, examples>
-CONSTRAINTS: <project conventions: package manager (pnpm), existing UI/libs,
-  style, TDD where the project has tests>
+CONSTRAINTS: <project conventions: package manager (e.g. pnpm), existing
+  UI/libs, style, TDD where the project has tests>
 ACCEPTANCE: <verifiable criteria — which tests pass, what behavior works>
 ITERATION CAP: after 3 failed fix attempts on the same error, stop and
   report the blocker instead of thrashing.
@@ -122,9 +126,9 @@ needs to talk to a worker — relay what matters.
 
 ## Conductor interplay
 
-Conductor pipelines invoke crew in the build phase (feature and complex
-pipelines). Worker briefs carry the TDD discipline into execution, so when
-crew completes, the build phase is complete. The small-fix pipeline
-deliberately excludes crew. On non-orchestrator hosts the capability gate
-above makes crew a pass-through and the rest of the pipeline proceeds
-unchanged.
+If you use skill-conductor, wire crew into the build phase of substantial
+pipelines (e.g. feature and complex). Worker briefs carry the TDD
+discipline into execution, so when crew completes, the build phase is
+complete. Keep crew out of small-fix-scale pipelines — delegation overhead
+isn't worth it there. On non-orchestrator hosts the capability gate above
+makes crew a pass-through and the rest of the pipeline proceeds unchanged.
