@@ -20,7 +20,7 @@
 
 # crew
 
-Multi-model build orchestrator skill. The skill itself is
-`skills/crew/SKILL.md`; worker definitions live in `skills/crew/workers/`.
-On Codex, crew runs as a graceful pass-through (see `.codex/INSTALL.md`) —
-do not "fix" the capability gate; the degradation is by design.
+Multi-model build orchestrator skill. The `skills/crew/` directory is the
+operational source. `SKILL.md` owns shared orchestration. Worker definitions
+own routing. Keep manifests, pipelines, and project instructions free of
+copied model maps.

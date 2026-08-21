@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Replaced the Codex-wide pass-through with per-domain capability checks.
+- Made the worker definitions the operational source of truth for routing.
+- Routed backend work through GPT-5.6 Sol with `high` reasoning on both hosts.
+- Routed Codex mechanical work through GPT-5.6 Luna with `max` reasoning while preserving Sonnet on Claude Code.
+- Preserved Opus as the only frontend implementation model and added a verified, write-capable Claude Code CLI bridge for every controller.
+- Changed worker failures to fail closed instead of silently substituting models.
+
+### Added
+- Added `scripts/run-claude-worker.sh` for Claude workers, with environment
+  normalization, effective-model verification, and isolated-worktree
+  enforcement.
+- Added deterministic bridge and routing-contract tests.
+
 ## [0.1.0] - 2026-06-10
 
 ### Added

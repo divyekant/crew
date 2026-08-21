@@ -23,5 +23,6 @@
 Multi-model build orchestrator skill. The skill itself is
 `skills/crew/SKILL.md`; worker definitions live in `skills/crew/workers/`.
 Keep the SKILL.md body within the Agent Skills portable core — the
-cross-host capability gate depends on it. Host-specific spawn mechanics
-belong in the worker definition files.
+cross-host capability gate depends on it. The worker definitions are the
+single source of truth for models, reasoning effort, transports, and failure
+behavior. Do not copy those details into other guidance.

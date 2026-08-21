@@ -1,134 +1,95 @@
 ---
 name: crew
-description: Multi-model build orchestrator. Use when a dev task reaches substantive implementation (multi-file feature work, anything spanning frontend/backend/mechanical concerns) or when explicitly invoked. The session model acts as controller and mastermind — it dispatches model-matched workers (Opus for frontend, GPT-5.5 via Codex for backend, Sonnet for low-level/mechanical work), reviews every diff, and integrates the results. On hosts without model-pinned subagents (e.g. Codex CLI), degrades gracefully to direct execution.
-compatibility: Full orchestration requires Claude Code with subagent model pinning and the openai-codex plugin (codex login completed). On other hosts this skill is a pass-through — announce the degradation in one line and execute the build phase directly with the host's normal process.
+description: Use when substantive implementation can be split into independently owned frontend, backend, or mechanical work, or when the user explicitly requests Crew. Avoid automatic use for review-only work, small fixes, or tasks without separable file ownership.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: dk
 ---
 
 # Crew — Multi-Model Build Orchestrator
 
-## Capability gate (read first)
+The session model controls decomposition, dispatch, review, and integration.
+Workers implement.
 
-Can you (a) spawn subagents pinned to specific models AND (b) reach a
-`codex:codex-rescue` subagent type? If **no** — you are not an orchestrator
-host. Say exactly one line: `crew: no fleet on this host — executing
-directly.` Then continue the build phase with your normal process and the
-remaining build-phase skills. Everything below applies only to orchestrator
-hosts.
+## Capability gate
 
-## Role
+Check actual capabilities for each required domain. Do not infer them from the
+host name.
 
-You are the controller and mastermind. The user talks to you and only you.
-You do not implement substantive work — your jobs are: decompose, brief,
-dispatch, review, integrate, report. The one exception: trivial edits
-(roughly under 10 lines, single file, zero ambiguity) you do directly,
-because writing a brief would cost more than the change.
+| Domain | Required definition |
+|---|---|
+| Frontend | [workers/frontend.md](workers/frontend.md) |
+| Backend | [workers/backend.md](workers/backend.md) |
+| Mechanical | [workers/mechanical.md](workers/mechanical.md) |
 
-Do not use crew for small fixes end-to-end — delegation overhead runs 2–5×
-the tokens of direct work. Crew earns its cost on multi-file, multi-domain
-implementation.
+Read each required definition before composing its brief. These files are the
+single source for models, effort, transports, and domain failures. Do not copy
+their routes into other guidance.
 
-## The roster
+If an exact worker is unavailable, fail closed for that domain. Report the
+blocker and continue only with unaffected domains. Never substitute another
+model unless the user explicitly approves the substitution.
 
-| Worker | Spawn as | Owns | Definition |
-|---|---|---|---|
-| **Opus** | Agent tool, `model: "opus"` | Frontend: components, styling, layout, UX states, accessibility, visual polish | `workers/opus-frontend.md` |
-| **GPT‑5.5** | Agent tool, `subagent_type: "codex:codex-rescue"` | Backend: APIs, services, DB/schema, auth, queues, integrations, business logic | `workers/gpt-backend.md` |
-| **Sonnet** | Agent tool, `model: "sonnet"` | Mechanical: tests, fixtures, renames, codemods, boilerplate, doc updates, lint sweeps | `workers/sonnet-mechanical.md` |
+## Controller boundary
 
-Before composing a brief, read the worker's definition file (paths relative
-to this skill directory) — it carries that worker's brief additions, review
-focus, and known failure modes.
+The controller can make a trivial edit under about 10 lines when it affects one
+file and has no ambiguity. Worker ownership rules override this exception.
 
-## Routing rules
+## Decomposition and dispatch
 
-- Classify each work item by **dominant domain** and route per the roster.
-- **Full-stack features go contract-first**: you write the interface contract
-  (API shape, types, error cases) yourself, then dispatch FE and BE workers
-  in parallel against it.
-- Split mechanical sub-parts out of larger items and send them to Sonnet.
-- Tiebreak ambiguous items by who owns the riskiest part.
-- Edge-call heuristic from field experience: Claude models are strongest at
-  UI quality and cross-file reasoning; GPT/Codex is strongest at sustained
-  autonomous execution and deterministic structured output.
+- Classify work by dominant domain.
+- For full-stack work, write the interface contract before dispatch.
+- Give every file to one worker only.
+- Run independent writers in parallel only when each has an isolated
+  worktree. Otherwise, serialize them.
+- Every external bridge writer uses an isolated worktree.
+- Keep workers flat. Workers do not delegate.
+- Give each worker a complete brief.
 
-## Dispatch protocol
+Use this brief contract:
 
-- Independent workers dispatch **in parallel, in a single message**.
-- **One file, one owner.** Never let two concurrent workers write the same
-  file. If ownership would overlap, re-slice the work or serialize it.
-- When two or more workers mutate the same repo concurrently, give each
-  `isolation: "worktree"`.
-- Long-running work goes to background; keep orchestrating while it runs.
-- Workers never sub-delegate. Flat topology only.
-
-### Worker brief template
-
-Every brief uses this shape — workers have no access to your conversation
-history, so the brief must be self-contained:
-
-```
-You are a crew worker — a delegated executor for one scoped task. Routing
-and pipeline classification already happened upstream. Do NOT invoke
-conductor, brainstorming, or any task-routing skill; execute this brief
-directly.
+```text
+You are a Crew worker for one scoped implementation task. Routing already
+happened. Do not invoke conductor, brainstorming, Crew, or another routing
+skill. Do not delegate.
 
 GOAL: <one sentence>
-FILES YOU OWN: <paths — you are the only writer of these>
-OUT OF SCOPE: <explicit exclusions — do not touch these even if tempting>
-CONTEXT: <everything needed to work standalone — contracts, types, examples>
-CONSTRAINTS: <project conventions: package manager (e.g. pnpm), existing
-  UI/libs, style, TDD where the project has tests>
-ACCEPTANCE: <verifiable criteria — which tests pass, what behavior works>
-ITERATION CAP: after 3 failed fix attempts on the same error, stop and
-  report the blocker instead of thrashing.
-RETURN: summary of changes, files touched, how you verified, anything
-  left undone.
+FILES YOU OWN: <complete paths>
+OUT OF SCOPE: <explicit exclusions>
+CONTEXT: <contracts, types, examples, neighboring code>
+CONSTRAINTS: <project conventions and test discipline>
+ACCEPTANCE: <observable behavior and required validation>
+ITERATION CAP: after three failed attempts on the same error, stop and report.
+RETURN: summary, files changed, validation performed, and unfinished work.
 ```
-
-For the GPT‑5.5 worker: put the entire brief in the forwarded task text
-(the rescue subagent is a pure forwarder — one brief, one task call).
-Compose it tightly; the codex plugin's prompting guidance applies. Runs are
-write-capable by default.
 
 ## Review gate
 
-Nothing reaches the user unreviewed.
+Nothing reaches the user without controller review.
 
-1. Read the full diff from every worker. Check scope adherence, conventions,
-   and the acceptance criteria.
-2. Run the project's tests/build yourself. Worker claims are not evidence.
-3. GPT output gets cross-model review by construction (you are the reviewer).
-   For high-risk or large diffs authored by Claude workers, optionally
-   request a codex adversarial review so a second model family sees it.
-4. On failure: one targeted retry to the same worker with specific feedback.
-   On second failure: reroute to a different worker or take it over yourself.
-5. If Codex is unavailable, backend work falls back to Opus — flag the
-   fallback in your report.
+1. Read every worker diff and check file ownership.
+2. Check the interface contract and project conventions.
+3. Run the relevant tests and build. Worker claims are not evidence.
+4. Give one targeted retry with specific feedback.
+5. If the retry fails, stop that domain and report the blocker. Do not change
+   its assigned model without user approval.
 
 ## Reporting
 
-Reports attribute work per worker and state what you verified (commands run,
-results). Flag anything left undone, rerouted, or degraded. The user never
-needs to talk to a worker — relay what matters.
+Report each worker, controller validation, and any blocked, serialized,
+retried, or approved substitute work.
 
-## Anti-patterns (hard rules)
+## Common mistakes
 
-- No orchestrator-as-god: you do not implement substantive work, even when
-  it feels faster.
-- No delegation of trivia: sub-10-line edits are yours.
-- No shared file ownership across concurrent workers.
-- Never let a worker modify this skill, conductor config, or any agent
-  context file (CLAUDE.md / AGENTS.md) — those stay human-curated.
+- Assuming host capabilities instead of checking tools.
+- Treating a text-only helper as a writer.
+- Setting a model without its effort.
+- Running concurrent writers in one worktree.
+- Reassigning work without approval.
+- Letting workers edit Crew or agent context files.
 
 ## Conductor interplay
 
-If you use skill-conductor, wire crew into the build phase of substantial
-pipelines (e.g. feature and complex). Worker briefs carry the TDD
-discipline into execution, so when crew completes, the build phase is
-complete. Keep crew out of small-fix-scale pipelines — delegation overhead
-isn't worth it there. On non-orchestrator hosts the capability gate above
-makes crew a pass-through and the rest of the pipeline proceeds unchanged.
+Crew owns substantial build-phase execution. A blocked domain keeps that phase
+incomplete.

@@ -1,6 +1,7 @@
 # Crew — Multi-Model Build Orchestrator: Design
 
-Date: 2026-06-10 · Status: approved (design direction approved interactively; ownership of detail decisions delegated)
+Date: 2026-06-10 · Status: superseded for operational routing by
+`2026-08-20-cross-host-routing-design.md`
 
 ## Problem
 
